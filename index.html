@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard | Mod Control</title>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  
+  <link rel="stylesheet" href="style.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div id="modal-confirm" class="modal-overlay">
+      <div class="modal-box modal-danger">
+          <h3><i class="fa-solid fa-triangle-exclamation"></i> XÁC NHẬN XÓA</h3>
+          <p style="text-align: center; color: #ccc; margin-bottom: 20px;">
+              Bạn có chắc chắn muốn xóa mục này không?<br>
+              <span style="font-size: 0.8rem; color: #777;">(Hành động này cần bấm Lưu để áp dụng)</span>
+          </p>
+          <div class="btn-group-modal">
+              <button class="btn-modal btn-cancel" onclick="closeConfirmModal()">Hủy Bỏ</button>
+              <button class="btn-modal btn-delete-confirm" onclick="executeDelete()">Xóa Luôn</button>
+          </div>
+      </div>
+  </div>
+<div id="loading-overlay"><div class="spinner"></div><div style="color:var(--primary);">CONNECTING...</div></div>
+  <div id="custom-toast"><div class="toast-icon"></div><div class="toast-content"><h4>Thông báo</h4><p id="toast-message"></p></div></div>
+
+  <div id="modal-import-key" class="modal-overlay">
+      <div class="modal-box">
+          <h3><i class="fa-solid fa-file-import"></i> NẠP KEY</h3>
+          
+          <div class="form-group">
+              <label>Chọn Loại Gói</label>
+              <select id="import-type"></select>
+          </div>
+
+          <p style="color:#aaa; font-size:0.9rem; margin-bottom:10px;">Danh sách Key (Mỗi dòng 1 key):</p>
+          <textarea id="bulk-keys" class="bulk-input" placeholder="KEY-001&#10;KEY-002"></textarea>
+          
+          <div class="btn-group-modal">
+              <button class="btn-modal btn-cancel" onclick="document.getElementById('modal-import-key').classList.remove('show')">Đóng</button>
+              <button class="btn-modal btn-confirm" onclick="importKeys()">Nạp Ngay</button>
+          </div>
+      </div>
+  </div>
+
+  <div id="modal-add" class="modal-overlay">
+      <div class="modal-box">
+          <h3><span id="modal-title">THÊM MỚI</span></h3>
+          <div class="form-group"><label id="modal-label-name">Tên</label><input type="text" id="new-item-name"></div>
+          <div class="form-group"><label id="modal-label-value">Giá trị</label><input type="text" id="new-item-value"></div>
+          <div class="btn-group-modal">
+              <button class="btn-modal btn-cancel" onclick="toggleModal(false)">Hủy</button>
+              <button class="btn-modal btn-confirm" onclick="confirmAddItem()">Thêm</button>
+          </div>
+      </div>
+  </div>
+
+  <div class="sidebar">
+    <div class="logo">MOD<span>PANEL</span></div>
+    <div class="menu-item active" onclick="switchTab('stats', this)"><i class="fa-solid fa-chart-line"></i> <span>Dashboard</span></div>
+    <div class="menu-item" onclick="switchTab('keys', this)"><i class="fa-solid fa-key"></i> <span>Kho Key</span></div>
+    <div class="menu-item" onclick="switchTab('config', this)"><i class="fa-solid fa-sliders"></i> <span>Cấu hình</span></div>
+  </div>
+
+  <div class="main">
+    <div id="tab-stats" class="tab-content active">
+        <h2 style="margin-bottom:20px;">Dashboard</h2>
+        <div class="grid">
+            <div class="card"><h3>Doanh Thu</h3><h2 id="view-revenue" style="font-size:2rem;">...</h2></div>
+            <div class="card"><h3>Đơn Hàng</h3><h2 id="view-orders" style="font-size:2rem;">...</h2></div>
+        </div>
+        <div class="card" style="margin-top:25px;"><canvas id="revenueChart"></canvas></div>
+    </div>
+
+    <div id="tab-keys" class="tab-content">
+        <h2 style="margin-bottom:20px;">Kho License</h2>
+        <div class="grid" style="margin-bottom:20px;">
+            <div class="card" style="padding:20px;"><h4>Key Active</h4><h2 id="stat-active" style="color:var(--success)">0</h2></div>
+            <div class="card" style="padding:20px;"><h4>Key Used</h4><h2 id="stat-used" style="color:var(--danger)">0</h2></div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <h3>Danh sách Key</h3>
+                <button class="btn-add-small" onclick="document.getElementById('modal-import-key').classList.add('show')" style="width:auto; padding:0 15px; border-radius:6px;"><i class="fa-solid fa-upload"></i> Nạp Key</button>
+            </div>
+            <div class="table-container">
+                <table class="key-table">
+                    <thead><tr><th>STT</th><th>Key</th><th>Loại Gói</th><th>Trạng thái</th><th>Mã GD</th><th>Xóa</th></tr></thead>
+                    <tbody id="key-list-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-config" class="tab-content">
+        <h2 style="margin-bottom:20px;">Cấu hình Hệ thống</h2>
+        <div class="grid">
+            <div class="card"><div class="card-header"><h3>Giá Bán</h3><button class="btn-add-small" onclick="openModal('price')">+</button></div><div id="price-container"></div></div>
+            <div class="card"><div class="card-header"><h3>Link Tải</h3><button class="btn-add-small" onclick="openModal('link')">+</button></div><div id="link-container"></div></div>
+        </div>
+        <button class="btn-save-mini" onclick="saveData()"><i class="fa-solid fa-floppy-disk"></i> Lưu Cấu Hình</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+
+</body>
+</html>
