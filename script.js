@@ -1,5 +1,5 @@
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbwY-smHUcoE_of_FZUZUT7HqDQPTNL6ut3-MqCnuRu0dJJPKB97JGPKGdJDYGLyRBK_mQ/exec'; 
+const API_URL = 'https://script.google.com/macros/s/AKfycbxFfFfI2TTj6DP-nKMKmvQAlQ4Y6GEUiAVYiBmhY-JNHd2v0o-EHDYNCHWpb18qmKcpmQ/exec'; 
 let configData = {};
 let deleteTargetId = null; 
 let currentAddType = 'price';
@@ -332,14 +332,78 @@ function saveData() {
         btn.innerHTML = originalHTML; btn.disabled = false;
     });
 }
+async function loadCoupons() {
+    const tbody = document.getElementById('coupon-list-body');
+    if (!tbody) return;
 
-function switchTab(tabName, el) {
-    document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
-    el.classList.add('active');
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    document.getElementById('tab-' + tabName).classList.add('active');
-    
-    if(tabName === 'keys') loadKeys();
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">⌛ Đang tải...</td></tr>';
+
+    try {
+        const response = await fetch(`${API_URL}?action=get_coupons`);
+        const data = await response.json();
+
+        console.log("📥 Dữ liệu thực tế nhận được:", data);
+
+        // KIỂM TRA: Nếu data không phải là mảng
+        if (!Array.isArray(data)) {
+            console.error("❌ Dữ liệu trả về không phải mảng:", data);
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:orange;">⚠️ Lỗi định dạng dữ liệu từ Server!</td></tr>`;
+            return;
+        }
+
+        if (data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Chưa có mã giảm giá nào.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = ''; 
+        data.forEach((cp) => {
+            const discountText = cp.type === 'PERCENT' ? `${cp.discount}%` : `${parseInt(cp.discount).toLocaleString()}đ`;
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="color:var(--primary); font-weight:bold;">${cp.code}</td>
+                <td>${discountText}</td>
+                <td>${cp.type}</td>
+                <td>${cp.used} / ${cp.limit}</td>
+                <td>
+                    <button class="btn-delete-small" onclick="deleteCoupon('${cp.code}')" style="color:#ff4444; background:none; border:none; cursor:pointer;">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+    } catch (error) {
+        console.error("🔥 Lỗi:", error);
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">❌ Không thể kết nối API</td></tr>`;
+    }
+}
+function switchTab(tabId, element) {
+    // 1. Ẩn tất cả tab cũ
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+        tab.style.display = 'none';
+    });
+
+    // 2. Gỡ class active ở menu
+    document.querySelectorAll('.menu-item').forEach(item => {
+        item.classList.remove('active');
+    });
+
+    // 3. Hiển thị tab mới
+    const activeTab = document.getElementById('tab-' + tabId);
+    if (activeTab) {
+        activeTab.classList.add('active');
+        activeTab.style.display = 'block';
+        element.classList.add('active');
+    }
+
+    // 4. KIỂM TRA: Nếu là tab coupons thì phải load dữ liệu ngay
+    if (tabId === 'coupons') {
+        console.log("🔄 Đang chuyển sang tab Coupons, gọi loadCoupons()...");
+        loadCoupons(); 
+    }
 }
 
 function renderChart(chartData) {
@@ -425,3 +489,50 @@ function renderChart(chartData) {
         }
     });
 }
+
+async function submitCoupon() {
+    const code = document.getElementById('cp-code').value.trim();
+    const type = document.getElementById('cp-type').value;
+    const value = document.getElementById('cp-value').value;
+    const limit = document.getElementById('cp-limit').value;
+
+    if (!code || !value || !limit) {
+        showToast("Vui lòng nhập đầy đủ thông tin mã!", "danger");
+        return;
+    }
+
+    // Hiển thị loading (nếu bạn có hàm toggleLoading)
+    document.getElementById('loading-overlay').style.display = 'flex';
+
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                action: 'add_coupon',
+                code: code,
+                type: type,
+                discount: parseFloat(value),
+                limit: parseInt(limit)
+            })
+        });
+
+        const result = await response.json();
+        if (result.status === 'success') {
+            showToast("Đã thêm mã giảm giá thành công!", "success");
+            // Reset form
+            document.getElementById('cp-code').value = '';
+            document.getElementById('cp-value').value = '';
+            // Load lại danh sách (Nếu bạn viết hàm loadCoupons)
+            if (typeof loadCoupons === "function") loadCoupons();
+        } else {
+            showToast(result.message, "danger");
+        }
+    } catch (e) {
+        showToast("Lỗi kết nối máy chủ!", "danger");
+    } finally {
+        document.getElementById('loading-overlay').style.display = 'none';
+    }
+}
+
+// Đừng quên cập nhật hàm switchTab để nó ẩn hiện được tab coupons
+// function switchTab(tabId, element) { ... } hiện tại của bạn sẽ tự hoạt động nếu ID khớp.

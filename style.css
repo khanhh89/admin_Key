@@ -266,3 +266,14 @@ input:focus { border-color: var(--primary); box-shadow: 0 0 10px rgba(0,242,255,
     .grid { grid-template-columns: 1fr; }
     #custom-toast { top: auto; bottom: 20px; right: 20px; min-width: auto; }
 }
+
+/* Màu sắc đặc trưng cho Ticket */
+.menu-item i.fa-ticket {
+    color: #ffaa00;
+}
+
+.tab-content#tab-coupons .btn-confirm {
+    background: linear-gradient(90deg, #ff8800, #ffaa00);
+    color: #000;
+    margin-top: 10px;
+}
