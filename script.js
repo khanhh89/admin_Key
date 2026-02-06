@@ -1,5 +1,5 @@
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbxJHUBhK9x4zsyoAafACZrViWKjbnqELzndhdA8uqmtRdlPNnx4tQpDPyd09q2xt0oT7A/exec'; 
+const API_URL = 'https://script.google.com/macros/s/AKfycbwY-smHUcoE_of_FZUZUT7HqDQPTNL6ut3-MqCnuRu0dJJPKB97JGPKGdJDYGLyRBK_mQ/exec'; 
 let configData = {};
 let deleteTargetId = null; 
 let currentAddType = 'price';
@@ -14,7 +14,6 @@ function showToast(msg, type = 'success') {
     const i = t.querySelector('.toast-icon');
     t.className = ''; void t.offsetWidth; 
     m.innerText = msg;
-    
     if(type === 'success') {
         t.classList.add('show', 'success');
         i.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
@@ -102,9 +101,6 @@ function loadKeys() {
             tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:red;">Lỗi kết nối Server!</td></tr>';
         });
 }
-
-
-
 function renderKeysTable(dataList) {
     const tbody = document.getElementById('key-list-body');
     tbody.innerHTML = "";
