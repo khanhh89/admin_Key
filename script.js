@@ -429,3 +429,21 @@ function renderChart(chartData) {
         }
     });
 }
+async function setMaintenance(status) {
+    const data = {
+        action: 'save_maintenance',
+        maintenance_mode: status, // "ON" hoặc "OFF"
+        time: new Date().toLocaleString()
+    };
+
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            mode: 'no-cors', // Tránh lỗi CORS khi dùng Google Script
+            body: JSON.stringify(data)
+        });
+        alert("Đã gửi lệnh: " + (status === "ON" ? "BẬT BẢO TRÌ" : "TẮT BẢO TRÌ"));
+    } catch (e) {
+        alert("Lỗi: " + e.message);
+    }
+}

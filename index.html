@@ -125,6 +125,7 @@
       <div class="menu-item" onclick="switchTab('coupons', this)">
         <i class="fa-solid fa-ticket"></i> <span>Mã giảm giá</span>
       </div>
+      
     </div>
 
     <div class="main">
@@ -215,6 +216,20 @@
         <button class="btn-save-mini" onclick="saveData()">
           <i class="fa-solid fa-floppy-disk"></i> Lưu Cấu Hình
         </button>
+              <div class="card">
+    <h3>🔧 Quản lý hệ thống</h3>
+    <div class="maintenance-container">
+        <div class="status-info">
+            <span>Trạng thái trang người dùng: </span>
+            <strong id="maintenance-status-text">Đang tải...</strong>
+        </div>
+        <label class="switch">
+            <input type="checkbox" id="maintenance-toggle" onchange="handleMaintenanceChange()">
+            <span class="slider round"></span>
+        </label>
+        <p class="note">Khi bật, người dùng sẽ không thể truy cập trang chủ.</p>
+    </div>
+</div>
       </div>
       <div id="tab-coupons" class="tab-content">
         <h2 style="margin-bottom: 20px">Quản lý Mã giảm giá</h2>

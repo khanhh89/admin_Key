@@ -241,7 +241,7 @@ input:focus { border-color: var(--primary); box-shadow: 0 0 10px rgba(0,242,255,
 .btn-add-small:hover { transform: scale(1.1); box-shadow: 0 0 10px var(--primary); }
 
 .action-bar { margin-top: 25px; display: flex; justify-content: flex-start; }
-.btn-save-mini { background: var(--primary); color: #000; border: none; padding: 10px 25px; border-radius: 6px; font-weight: 600; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.3s; box-shadow: 0 0 10px rgba(0, 242, 255, 0.2);margin-top: 20px;margin-top: 20px; }
+.btn-save-mini { background: var(--primary); color: #000; border: none; padding: 10px 25px; border-radius: 6px; font-weight: 600; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.3s; box-shadow: 0 0 10px rgba(0, 242, 255, 0.2);margin-top: 20px;margin: 20px 0px; }
 .btn-save-mini:hover { transform: translateY(-2px); box-shadow: 0 0 20px rgba(0, 242, 255, 0.5); }
 .btn-save-mini:disabled { background: #555; cursor: not-allowed; transform: none; box-shadow: none; }
 
@@ -285,3 +285,50 @@ input:focus { border-color: var(--primary); box-shadow: 0 0 10px rgba(0,242,255,
     padding: 10px;
     border-radius: 12px;
 }
+/* Container chính */
+.maintenance-container {
+    background: #0f0f12;
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid #ddd;
+    margin-top: 10px;
+}
+
+.status-info { margin-bottom: 15px; font-size: 16px; }
+#maintenance-status-text { color: #2ecc71; } /* Mặc định màu xanh */
+
+/* Switch Slider */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 34px;
+}
+
+.switch input { opacity: 0; width: 0; height: 0; }
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 26px; width: 26px;
+  left: 4px; bottom: 4px;
+  background-color: white;
+  transition: .4s;
+}
+
+input:checked + .slider { background-color: #e74c3c; } /* Màu đỏ khi bảo trì */
+input:focus + .slider { box-shadow: 0 0 1px #e74c3c; }
+input:checked + .slider:before { transform: translateX(26px); }
+
+.slider.round { border-radius: 34px; }
+.slider.round:before { border-radius: 50%; }
+
+.note { color: #666; font-size: 12px; margin-top: 10px; font-style: italic; }
