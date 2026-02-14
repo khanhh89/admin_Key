@@ -115,24 +115,36 @@ function renderKeysTable(dataList) {
          return;
     }
 
+    // --- BƯỚC SẮP XẾP: Đẩy 'Active' lên đầu, 'Used' xuống cuối ---
+    dataList.sort((a, b) => {
+        if (a.status === 'Active' && b.status !== 'Active') return -1;
+        if (a.status !== 'Active' && b.status === 'Active') return 1;
+        return 0; // Giữ nguyên thứ tự nếu cùng trạng thái
+    });
+
     dataList.forEach((item, index) => {
+        // Đếm số lượng
         if(item.status == 'Active') activeCount++; else usedCount++;
         
+        // Giao diện Badge
         let statusBadge = item.status == 'Active' 
             ? `<span class="status-badge status-active">Sẵn sàng</span>`
             : `<span class="status-badge status-used">Đã bán</span>`;
         
         let typeName = item.type ? item.type.replace('price_', '').replace(/_/g, ' ').toUpperCase() : 'KHÁC';
 
+        // Vẽ hàng
         tbody.innerHTML += `
-            <tr id="key-row-${item.id}">
+            <tr id="key-row-${item.id}" class="${item.status == 'Active' ? '' : 'row-used'}">
                 <td>${index + 1}</td>
                 <td class="key-code">${item.key}</td>
                 <td style="color:var(--primary); font-weight:600;">${typeName}</td>
                 <td>${statusBadge}</td>
-                <td style="color:#aaa;">${item.owner}</td>
+                <td style="color:#aaa;">${item.owner || 'Chưa có'}</td>
                 <td style="text-align:center;">
-                    <button class="btn-icon-del" onclick="deleteKey(${item.id})"><i class="fa-solid fa-trash"></i></button>
+                    <button class="btn-icon-del" onclick="deleteKey(${item.id})">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
                 </td>
             </tr>
         `;

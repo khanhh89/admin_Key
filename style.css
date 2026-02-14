@@ -332,3 +332,15 @@ input:checked + .slider:before { transform: translateX(26px); }
 .slider.round:before { border-radius: 50%; }
 
 .note { color: #666; font-size: 12px; margin-top: 10px; font-style: italic; }
+
+/* Thêm vào file CSS của bạn */ 
+.row-used {
+    background-color: #f0f0; /* Màu nền hơi xám nhẹ */
+}
+.row-used .key-code {
+    color: #999; /* Làm mờ mã key đã bán */
+    text-decoration: line-through; /* Gạch ngang nếu muốn */
+}
+.row-used .status-badge {
+    opacity: 0.7;
+}
