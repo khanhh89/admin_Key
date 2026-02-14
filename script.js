@@ -1,5 +1,6 @@
 
 const API_URL = 'https://script.google.com/macros/s/AKfycbxJHUBhK9x4zsyoAafACZrViWKjbnqELzndhdA8uqmtRdlPNnx4tQpDPyd09q2xt0oT7A/exec'; 
+const API_COUPON_URL = "https://script.google.com/macros/s/AKfycbxzHjSOtAccC1kSGmGYPT2emE6HQYFZXn8fwylM6VYNSF2XqWn5lUxItM-aoSQM28b2aw/exec";
 let configData = {};
 let deleteTargetId = null; 
 let currentAddType = 'price';
@@ -350,12 +351,18 @@ function saveData() {
 }
 
 function switchTab(tabName, el) {
+    // Xóa active ở menu và nội dung cũ
     document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
     el.classList.add('active');
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     document.getElementById('tab-' + tabName).classList.add('active');
     
-    if(tabName === 'keys') loadKeys();
+    // Tải dữ liệu tương ứng với từng tab
+    if (tabName === 'keys') {
+        loadKeys();
+    } else if (tabName === 'coupons') {
+        loadCoupons(); // Gọi hàm tải danh sách mã giảm giá
+    }
 }
 
 function renderChart(chartData) {
@@ -457,5 +464,158 @@ async function setMaintenance(status) {
         alert("Đã gửi lệnh: " + (status === "ON" ? "BẬT BẢO TRÌ" : "TẮT BẢO TRÌ"));
     } catch (e) {
         alert("Lỗi: " + e.message);
+    }
+}
+
+async function submitCoupon() {
+    // Lấy đúng ID từ HTML bạn gửi
+    const codeEl = document.getElementById('cp-code');
+    const typeEl = document.getElementById('cp-type');
+    const valueEl = document.getElementById('cp-value');
+    const limitEl = document.getElementById('cp-limit');
+
+    const data = {
+        action: 'add_coupon',
+        code: codeEl.value.trim().toUpperCase(),
+        discount: valueEl.value,
+        type: typeEl.value, // "PERCENT" hoặc "FIXED"
+        limit: limitEl.value
+    };
+
+    if (!data.code || !data.discount || !data.limit) {
+        showToast("Vui lòng điền đầy đủ thông tin mã!", "error");
+        return;
+    }
+
+    const btn = event.target;
+    const originalText = btn.innerText;
+    btn.innerText = "Đang tạo...";
+    btn.disabled = true;
+
+    try {
+        const response = await fetch(API_COUPON_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(data)
+        });
+        const result = await response.json();
+
+        if (result.status === 'success') {
+            showToast("Đã tạo mã giảm giá thành công!", "success");
+            // Xóa trắng form sau khi tạo
+            codeEl.value = "";
+            valueEl.value = "";
+            limitEl.value = "";
+            // Tải lại danh sách bảng bên phải
+            loadCoupons();
+        } else {
+            showToast(result.msg, "error");
+        }
+    } catch (e) {
+        console.error(e);
+        showToast("Lỗi kết nối Server Coupon!", "error");
+    } finally {
+        btn.innerText = originalText;
+        btn.disabled = false;
+    }
+}
+
+// 1. Tải danh sách mã lên bảng
+async function loadCoupons() {
+    const tbody = document.getElementById('coupon-list-body');
+    if (!tbody) return;
+
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</td></tr>';
+
+    try {
+        const response = await fetch(`${API_COUPON_URL}?t=${Date.now()}`);
+        const rows = await response.json();
+
+        if (rows.status === 'error') throw new Error(rows.msg);
+
+        tbody.innerHTML = "";
+        if (rows.length <= 1) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center">Chưa có mã giảm giá nào</td></tr>';
+            return;
+        }
+
+        for (let i = 1; i < rows.length; i++) {
+            const [code, discount, type, limit, used] = rows[i];
+            const displayType = type === "PERCENT" ? "%" : "VNĐ";
+            tbody.innerHTML += `
+                <tr>
+                    <td style="font-weight:600; color:#00f2ff">${code}</td>
+                    <td>${discount}</td>
+                    <td>${displayType}</td>
+                    <td><span style="color:#aaa">${used}</span> / ${limit}</td>
+                    <td style="text-align:center">
+                        <button class="btn-icon-del" onclick="deleteCoupon('${code}')">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>`;
+        }
+    } catch (e) {
+        console.error(e);
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#ff4d4d">Lỗi CORS hoặc API chưa cấp quyền Anyone!</td></tr>';
+    }
+}
+
+// 2. Hàm thêm mã mới
+async function submitCoupon() {
+    const btn = event.target;
+    const data = {
+        action: 'add_coupon',
+        code: document.getElementById('cp-code').value.trim().toUpperCase(),
+        type: document.getElementById('cp-type').value,
+        discount: document.getElementById('cp-value').value,
+        limit: document.getElementById('cp-limit').value
+    };
+
+    if (!data.code || !data.discount) return showToast("Nhập đủ thông tin!", "error");
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>...';
+
+    try {
+        const res = await fetch(API_COUPON_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        showToast(result.msg, result.status === 'success' ? 'success' : 'error');
+        if (result.status === 'success') {
+            document.getElementById('cp-code').value = "";
+            document.getElementById('cp-value').value = "";
+            loadCoupons();
+        }
+    } catch (e) {
+        showToast("Lỗi kết nối Server!", "error");
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "Tạo Mã Ngay";
+    }
+}
+
+async function deleteCoupon(code) {
+    if (!confirm(`Xác nhận xóa mã: ${code}?`)) return;
+
+    try {
+        const response = await fetch(API_COUPON_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'delete_coupon', code: code })
+        });
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+            showToast("Đã xóa mã!", "success");
+            loadCoupons();
+        } else {
+            showToast(result.msg, "error");
+        }
+    } catch (e) {
+        showToast("Lỗi khi xóa mã!", "error");
     }
 }
