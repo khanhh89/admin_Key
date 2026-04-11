@@ -763,31 +763,8 @@ input:focus {
   #custom-toast.show {
     transform: translateX(-50%) translateY(0);
   }
-
-  /* Biểu đồ */
-  #revenueChart {
-    height: 250px !important;
-  }
 }
 
-/* Màu sắc đặc trưng cho Ticket */
-.menu-item i.fa-ticket {
-  color: #ffaa00;
-}
-#cp-type {
-  padding: 12px;
-  background-color: #000;
-  color: #51504f;
-  border-radius: 6px;
-  width: 100%;
-}
-.tab-content#tab-coupons .btn-confirm {
-  background: linear-gradient(90deg, #ff8800, #ffaa00);
-  color: #000;
-  margin-top: 10px;
-  padding: 10px;
-  border-radius: 12px;
-}
 /* Container chính */
 .maintenance-container {
   background: #0f0f12;
@@ -875,4 +852,22 @@ input:checked + .slider:before {
 }
 .row-used .status-badge {
   opacity: 0.7;
+}
+
+/* --- REAL-TIME USERS DYNAMIC --- */
+.realtime-card {
+  text-align: center;
+  padding: 40px !important;
+}
+.realtime-number {
+  font-size: 4.5rem;
+  color: var(--primary);
+  text-shadow: 0 0 20px rgba(0, 242, 255, 0.4);
+  font-family: "Orbitron", sans-serif;
+  margin: 10px 0;
+  transition: opacity 0.15s ease-in-out;
+}
+.realtime-label {
+  color: #888;
+  font-size: 0.95rem;
 }

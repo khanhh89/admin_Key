@@ -15,8 +15,6 @@
     />
 
     <link rel="stylesheet" href="style.css" />
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   </head>
   <body>
     <div id="modal-confirm" class="modal-overlay">
@@ -112,9 +110,27 @@
     </div>
 
     <div class="sidebar" id="sidebar">
-      <div class="sidebar-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px;">
-        <div class="logo" style="margin-bottom: 0;">MOD<span>PANEL</span></div>
-        <button onclick="toggleSidebar()" class="btn-toggle-sidebar" style="background: transparent; border: none; color: var(--primary); font-size: 1.5rem; cursor: pointer;">
+      <div
+        class="sidebar-header"
+        style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 40px;
+        "
+      >
+        <div class="logo" style="margin-bottom: 0">MOD<span>PANEL</span></div>
+        <button
+          onclick="toggleSidebar()"
+          class="btn-toggle-sidebar"
+          style="
+            background: transparent;
+            border: none;
+            color: var(--primary);
+            font-size: 1.5rem;
+            cursor: pointer;
+          "
+        >
           <i class="fa-solid fa-bars"></i>
         </button>
       </div>
@@ -127,15 +143,39 @@
       <div class="menu-item" onclick="switchTab('config', this)">
         <i class="fa-solid fa-sliders"></i> <span>Cấu hình</span>
       </div>
-      <div class="menu-item" onclick="switchTab('coupons', this)">
-        <i class="fa-solid fa-ticket"></i> <span>Mã giảm giá</span>
-      </div>
-      
     </div>
 
     <div class="main" id="main-content">
       <div id="tab-stats" class="tab-content active">
-        <h2 style="margin-bottom: 20px">Dashboard</h2>
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+          "
+        >
+          <h2 style="margin-bottom: 0">Dashboard</h2>
+          <select
+            id="stat-time-filter"
+            onchange="loadStats()"
+            style="
+              padding: 8px 15px;
+              border-radius: 8px;
+              background: #000;
+              color: var(--primary);
+              border: 1px solid #333;
+              outline: none;
+              cursor: pointer;
+              font-family: &quot;Orbitron&quot;, sans-serif;
+            "
+          >
+            <option value="all">Tất cả thời gian</option>
+            <option value="today">Hôm nay</option>
+            <option value="week">Tuần này</option>
+            <option value="month">Tháng này</option>
+          </select>
+        </div>
         <div class="grid">
           <div class="card">
             <h3>Doanh Thu</h3>
@@ -146,8 +186,12 @@
             <h2 id="view-orders" style="font-size: 2rem">...</h2>
           </div>
         </div>
-        <div class="card" style="margin-top: 25px">
-          <canvas id="revenueChart"></canvas>
+        <div class="card realtime-card" style="margin-top: 25px">
+          <h3 style="justify-content: center">
+            <i class="fa-solid fa-users"></i> Đang Trực Tuyến
+          </h3>
+          <h1 id="realtime-users" class="realtime-number">0</h1>
+          <p class="realtime-label">Người dùng đang hoạt động trên trang</p>
         </div>
       </div>
 
@@ -221,70 +265,24 @@
         <button class="btn-save-mini" onclick="saveData()">
           <i class="fa-solid fa-floppy-disk"></i> Lưu Cấu Hình
         </button>
-              <div class="card">
-    <h3>🔧 Quản lý hệ thống</h3>
-    <div class="maintenance-container">
-        <div class="status-info">
-            <span>Trạng thái trang người dùng: </span>
-            <strong id="maintenance-status-text">Đang tải...</strong>
-        </div>
-        <label class="switch">
-            <input type="checkbox" id="maintenance-toggle" onchange="handleMaintenanceChange()">
-            <span class="slider round"></span>
-        </label>
-        <p class="note">Khi bật, người dùng sẽ không thể truy cập trang chủ.</p>
-    </div>
-</div>
-      </div>
-      <div id="tab-coupons" class="tab-content">
-        <h2 style="margin-bottom: 20px">Quản lý Mã giảm giá</h2>
-        <div class="grid" style="grid-template-columns: 1fr 2fr; gap: 20px">
-          <div class="card">
-            <h3><i class="fa-solid fa-plus-circle"></i> Tạo Mã Mới</h3>
-            <div class="form-group" style="margin-top: 15px">
-              <label>Mã (Code)</label>
-              <input type="text" id="cp-code" placeholder="VD: KM50" />
+        <div class="card">
+          <h3>🔧 Quản lý hệ thống</h3>
+          <div class="maintenance-container">
+            <div class="status-info">
+              <span>Trạng thái trang người dùng: </span>
+              <strong id="maintenance-status-text">Đang tải...</strong>
             </div>
-            <div class="form-group">
-              <label>Loại giảm giá</label>
-              <select id="cp-type">
-                <option value="PERCENT">Phần trăm (%)</option>
-                <option value="FIXED">Tiền mặt (VNĐ)</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Giá trị giảm</label>
-              <input type="number" id="cp-value" placeholder="10 hoặc 20000" />
-            </div>
-            <div class="form-group">
-              <label>Số lượng mã</label>
-              <input type="number" id="cp-limit" placeholder="100" />
-            </div>
-            <button
-              class="btn-confirm"
-              style="width: 100%"
-              onclick="submitCoupon()"
-            >
-              Tạo Mã Ngay
-            </button>
-          </div>
-
-          <div class="card">
-            <h3>Danh sách đã tạo</h3>
-            <div class="table-container">
-              <table class="key-table">
-                <thead>
-                  <tr>
-                    <th>Mã</th>
-                    <th>Giảm</th>
-                    <th>Loại</th>
-                    <th>Đã dùng</th>
-                    <th>Hành động</th>
-                  </tr>
-                </thead>
-                <tbody id="coupon-list-body"></tbody>
-              </table>
-            </div>
+            <label class="switch">
+              <input
+                type="checkbox"
+                id="maintenance-toggle"
+                onchange="handleMaintenanceChange()"
+              />
+              <span class="slider round"></span>
+            </label>
+            <p class="note">
+              Khi bật, người dùng sẽ không thể truy cập trang chủ.
+            </p>
           </div>
         </div>
       </div>

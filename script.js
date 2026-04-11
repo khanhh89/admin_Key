@@ -1,7 +1,5 @@
 const API_URL =
-  "https://script.google.com/macros/s/AKfycbxQDvYy2XHRIOrs7YHfZVMWKKGZJbf02m1Ej5bhZteNVoUwFUOh0S8YFN9AKhXN-g7iBA/exec";
-const API_COUPON_URL =
-  "https://script.google.com/macros/s/AKfycbxzHjSOtAccC1kSGmGYPT2emE6HQYFZXn8fwylM6VYNSF2XqWn5lUxItM-aoSQM28b2aw/exec";
+  "https://script.google.com/macros/s/AKfycbz6ObgWgduEYIcyVVWGa5wZQLeDoOKu-ylIUTqNvvqPvXykUb8hLKDwpFh6fCEB1134lg/exec";
 let configData = {};
 let deleteTargetId = null;
 let currentAddType = "price";
@@ -51,6 +49,7 @@ document.addEventListener("DOMContentLoaded", function () {
     fetchConfig(false);
   }
   loadStats();
+  startRealtimeUsers();
 });
 
 function fetchConfig(isBackground = false) {
@@ -95,13 +94,12 @@ function renderConfigUI(data) {
     );
     document.getElementById("view-orders").innerText = data.stats_orders;
   }
-
-  renderChart(data.chartData || data.chart);
 }
 
 function loadStats() {
   const revEl = document.getElementById("view-revenue");
   const orderEl = document.getElementById("view-orders");
+  const filter = document.getElementById("stat-time-filter") ? document.getElementById("stat-time-filter").value : "all";
 
   if (revEl)
     revEl.innerHTML =
@@ -110,19 +108,16 @@ function loadStats() {
     orderEl.innerHTML =
       '<i class="fa-solid fa-spinner fa-spin" style="font-size: 1.5rem;"></i>';
 
-  fetch(`${API_URL}?action=get_stats&t=${Date.now()}`)
+  fetch(`${API_URL}?action=get_stats&filter=${filter}&t=${Date.now()}`)
     .then((res) => res.json())
     .then((res) => {
       if (res && res.status === "success" && res.data) {
         const data = res.data;
         if (revEl) revEl.innerText = formatMoney(data.stats_revenue || 0);
         if (orderEl) orderEl.innerText = data.stats_orders || 0;
-
-        renderChart(data.chartData || data.chart);
       } else {
         if (revEl) revEl.innerText = "0 đ";
         if (orderEl) orderEl.innerText = "0";
-        renderChart();
       }
     })
     .catch((err) => {
@@ -453,105 +448,38 @@ function switchTab(tabName, el) {
   // Tải dữ liệu tương ứng với từng tab
   if (tabName === "keys") {
     loadKeys();
-  } else if (tabName === "coupons") {
-    loadCoupons(); // Gọi hàm tải danh sách mã giảm giá
   } else if (tabName === "stats") {
     loadStats();
   }
 }
 
-function renderChart(chartData) {
-  const ctx = document.getElementById("revenueChart");
-  if (!ctx) return;
+let realtimeInterval;
+function startRealtimeUsers() {
+  const usersEl = document.getElementById("realtime-users");
+  if (!usersEl) return;
 
-  // Nếu biểu đồ đã tồn tại, xóa đi để vẽ lại (tránh lỗi lồng biểu đồ)
-  if (window.myChart) window.myChart.destroy();
+  if (realtimeInterval) clearInterval(realtimeInterval);
 
-  // Dữ liệu mẫu (Nếu server chưa trả về mảng dữ liệu theo ngày)
-  const labels = chartData?.labels || [
-    "T2",
-    "T3",
-    "T4",
-    "T5",
-    "T6",
-    "T7",
-    "CN",
-  ];
-  const revenueData = chartData?.revenue || [
-    0, 50000, 20000, 150000, 80000, 250000, 400000,
-  ];
-  const orderData = chartData?.orders || [0, 2, 1, 5, 3, 7, 10];
+  const fetchOnlineUsers = () => {
+    fetch(`${API_URL}?action=get_online_users&t=${Date.now()}`)
+      .then((res) => res.json())
+      .then((res) => {
+        if (res && res.status === "success" && res.data) {
+          usersEl.style.opacity = "0.5";
+          setTimeout(() => {
+            usersEl.innerText = res.data.online_users || 0;
+            usersEl.style.opacity = "1";
+          }, 150);
+        }
+      })
+      .catch((err) => console.error("Lỗi lấy dữ liệu online:", err));
+  };
 
-  window.myChart = new Chart(ctx, {
-    type: "line",
-    data: {
-      labels: labels,
-      datasets: [
-        {
-          label: "Doanh thu (VND)",
-          data: revenueData,
-          borderColor: "#00f2ff", // Màu xanh neon
-          backgroundColor: "rgba(0, 242, 255, 0.1)",
-          yAxisID: "y-revenue", // Chỉ định trục Y bên trái
-          tension: 0.4,
-          fill: true,
-          pointRadius: 4,
-        },
-        {
-          label: "Đơn hàng (Số lượng)",
-          data: orderData,
-          borderColor: "#ff4d4d", // Màu đỏ neon
-          backgroundColor: "rgba(255, 77, 77, 0.1)",
-          yAxisID: "y-orders", // Chỉ định trục Y bên phải
-          tension: 0.4,
-          fill: true,
-          pointRadius: 4,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: {
-        mode: "index",
-        intersect: false,
-      },
-      plugins: {
-        legend: {
-          labels: { color: "#fff", font: { size: 12 } },
-        },
-      },
-      scales: {
-        "y-revenue": {
-          type: "linear",
-          display: true,
-          position: "left", // Doanh thu nằm bên TRÁI
-          ticks: {
-            color: "#00f2ff",
-            callback: (value) => value.toLocaleString() + "đ",
-          },
-          grid: { color: "rgba(255, 255, 255, 0.1)" },
-        },
-        "y-orders": {
-          type: "linear",
-          display: true,
-          position: "right", // Đơn hàng nằm bên PHẢI
-          min: 0,
-          ticks: {
-            color: "#ff4d4d",
-            stepSize: 1, // Chỉ hiện số nguyên
-          },
-          grid: {
-            drawOnChartArea: false, // Ẩn lưới trục phải để không bị rối
-          },
-        },
-        x: {
-          ticks: { color: "#94a3b8" },
-          grid: { display: false },
-        },
-      },
-    },
-  });
+  // Gọi API ngay lần đầu tiên
+  fetchOnlineUsers();
+
+  // Thiết lập gọi ngầm định kỳ mỗi 10 giây (Polling)
+  realtimeInterval = setInterval(fetchOnlineUsers, 10000);
 }
 async function setMaintenance(status) {
   const data = {
@@ -569,163 +497,6 @@ async function setMaintenance(status) {
     alert("Đã gửi lệnh: " + (status === "ON" ? "BẬT BẢO TRÌ" : "TẮT BẢO TRÌ"));
   } catch (e) {
     alert("Lỗi: " + e.message);
-  }
-}
-
-async function submitCoupon() {
-  // Lấy đúng ID từ HTML bạn gửi
-  const codeEl = document.getElementById("cp-code");
-  const typeEl = document.getElementById("cp-type");
-  const valueEl = document.getElementById("cp-value");
-  const limitEl = document.getElementById("cp-limit");
-
-  const data = {
-    action: "add_coupon",
-    code: codeEl.value.trim().toUpperCase(),
-    discount: valueEl.value,
-    type: typeEl.value, // "PERCENT" hoặc "FIXED"
-    limit: limitEl.value,
-  };
-
-  if (!data.code || !data.discount || !data.limit) {
-    showToast("Vui lòng điền đầy đủ thông tin mã!", "error");
-    return;
-  }
-
-  const btn = event.target;
-  const originalText = btn.innerText;
-  btn.innerText = "Đang tạo...";
-  btn.disabled = true;
-
-  try {
-    const response = await fetch(API_COUPON_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(data),
-    });
-    const result = await response.json();
-
-    if (result.status === "success") {
-      showToast("Đã tạo mã giảm giá thành công!", "success");
-      // Xóa trắng form sau khi tạo
-      codeEl.value = "";
-      valueEl.value = "";
-      limitEl.value = "";
-      // Tải lại danh sách bảng bên phải
-      loadCoupons();
-    } else {
-      showToast(result.msg, "error");
-    }
-  } catch (e) {
-    console.error(e);
-    showToast("Lỗi kết nối Server Coupon!", "error");
-  } finally {
-    btn.innerText = originalText;
-    btn.disabled = false;
-  }
-}
-
-// 1. Tải danh sách mã lên bảng
-async function loadCoupons() {
-  const tbody = document.getElementById("coupon-list-body");
-  if (!tbody) return;
-
-  tbody.innerHTML =
-    '<tr><td colspan="5" style="text-align:center"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</td></tr>';
-
-  try {
-    const response = await fetch(`${API_COUPON_URL}?t=${Date.now()}`);
-    const rows = await response.json();
-
-    if (rows.status === "error") throw new Error(rows.msg);
-
-    tbody.innerHTML = "";
-    if (rows.length <= 1) {
-      tbody.innerHTML =
-        '<tr><td colspan="5" style="text-align:center">Chưa có mã giảm giá nào</td></tr>';
-      return;
-    }
-
-    for (let i = 1; i < rows.length; i++) {
-      const [code, discount, type, limit, used] = rows[i];
-      const displayType = type === "PERCENT" ? "%" : "VNĐ";
-      tbody.innerHTML += `
-                <tr>
-                    <td style="font-weight:600; color:#00f2ff">${code}</td>
-                    <td>${discount}</td>
-                    <td>${displayType}</td>
-                    <td><span style="color:#aaa">${used}</span> / ${limit}</td>
-                    <td style="text-align:center">
-                        <button class="btn-icon-del" onclick="deleteCoupon('${code}')">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
-                    </td>
-                </tr>`;
-    }
-  } catch (e) {
-    console.error(e);
-    tbody.innerHTML =
-      '<tr><td colspan="5" style="text-align:center; color:#ff4d4d">Lỗi CORS hoặc API chưa cấp quyền Anyone!</td></tr>';
-  }
-}
-
-// 2. Hàm thêm mã mới
-async function submitCoupon() {
-  const btn = event.target;
-  const data = {
-    action: "add_coupon",
-    code: document.getElementById("cp-code").value.trim().toUpperCase(),
-    type: document.getElementById("cp-type").value,
-    discount: document.getElementById("cp-value").value,
-    limit: document.getElementById("cp-limit").value,
-  };
-
-  if (!data.code || !data.discount)
-    return showToast("Nhập đủ thông tin!", "error");
-
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>...';
-
-  try {
-    const res = await fetch(API_COUPON_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(data),
-    });
-    const result = await res.json();
-    showToast(result.msg, result.status === "success" ? "success" : "error");
-    if (result.status === "success") {
-      document.getElementById("cp-code").value = "";
-      document.getElementById("cp-value").value = "";
-      loadCoupons();
-    }
-  } catch (e) {
-    showToast("Lỗi kết nối Server!", "error");
-  } finally {
-    btn.disabled = false;
-    btn.innerText = "Tạo Mã Ngay";
-  }
-}
-
-async function deleteCoupon(code) {
-  if (!confirm(`Xác nhận xóa mã: ${code}?`)) return;
-
-  try {
-    const response = await fetch(API_COUPON_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({ action: "delete_coupon", code: code }),
-    });
-    const result = await response.json();
-
-    if (result.status === "success") {
-      showToast("Đã xóa mã!", "success");
-      loadCoupons();
-    } else {
-      showToast(result.msg, "error");
-    }
-  } catch (e) {
-    showToast("Lỗi khi xóa mã!", "error");
   }
 }
 
