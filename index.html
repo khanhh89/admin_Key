@@ -22,9 +22,6 @@
         <h3><i class="fa-solid fa-triangle-exclamation"></i> XÁC NHẬN XÓA</h3>
         <p style="text-align: center; color: #ccc; margin-bottom: 20px">
           Bạn có chắc chắn muốn xóa mục này không?<br />
-          <span style="font-size: 0.8rem; color: #777"
-            >(Hành động này cần bấm Lưu để áp dụng)</span
-          >
         </p>
         <div class="btn-group-modal">
           <button class="btn-modal btn-cancel" onclick="closeConfirmModal()">
@@ -104,6 +101,25 @@
           </button>
           <button class="btn-modal btn-confirm" onclick="confirmAddItem()">
             Thêm
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="modal-edit" class="modal-overlay">
+      <div class="modal-box">
+        <h3><i class="fa-solid fa-pen-to-square"></i> <span id="modal-edit-title">SỬA GIÁ TRỊ</span></h3>
+        <input type="hidden" id="edit-item-id" />
+        <div class="form-group">
+          <label id="modal-edit-label">Giá trị mới</label>
+          <input type="text" id="edit-item-value" placeholder="Nhập giá trị mới..." />
+        </div>
+        <div class="btn-group-modal">
+          <button class="btn-modal btn-cancel" onclick="closeEditModal()">
+            Hủy
+          </button>
+          <button class="btn-modal btn-confirm" onclick="confirmEdit()">
+            Lưu Thay Đổi
           </button>
         </div>
       </div>
@@ -262,27 +278,13 @@
             <div id="link-container"></div>
           </div>
         </div>
-        <button class="btn-save-mini" onclick="saveData()">
-          <i class="fa-solid fa-floppy-disk"></i> Lưu Cấu Hình
-        </button>
-        <div class="card">
-          <h3>🔧 Quản lý hệ thống</h3>
-          <div class="maintenance-container">
-            <div class="status-info">
-              <span>Trạng thái trang người dùng: </span>
-              <strong id="maintenance-status-text">Đang tải...</strong>
-            </div>
-            <label class="switch">
-              <input
-                type="checkbox"
-                id="maintenance-toggle"
-                onchange="handleMaintenanceChange()"
-              />
-              <span class="slider round"></span>
-            </label>
-            <p class="note">
-              Khi bật, người dùng sẽ không thể truy cập trang chủ.
-            </p>
+        <div class="card" style="margin-top: 25px;">
+          <div class="card-header">
+            <h3>📢 Thông báo & Liên hệ</h3>
+          </div>
+          <div class="form-group">
+            <label>Thông báo chạy chữ (Marquee)</label>
+            <input type="text" id="config-marquee" placeholder="Nhập thông báo hiển thị trên web..." onchange="updateFixedConfig('marquee', this.value)" />
           </div>
         </div>
       </div>

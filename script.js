@@ -87,6 +87,8 @@ function renderConfigUI(data) {
     } else if (key.startsWith("link_")) {
       renderInput("link-container", key, value);
     }
+    if (key === "marquee")
+      document.getElementById("config-marquee").value = value;
   }
   if (data.stats_revenue !== undefined) {
     document.getElementById("view-revenue").innerText = formatMoney(
@@ -99,7 +101,9 @@ function renderConfigUI(data) {
 function loadStats() {
   const revEl = document.getElementById("view-revenue");
   const orderEl = document.getElementById("view-orders");
-  const filter = document.getElementById("stat-time-filter") ? document.getElementById("stat-time-filter").value : "all";
+  const filter = document.getElementById("stat-time-filter")
+    ? document.getElementById("stat-time-filter").value
+    : "all";
 
   if (revEl)
     revEl.innerHTML =
@@ -258,34 +262,85 @@ function importKeys() {
     });
 }
 
+let isDeleting = false;
+let deleteQueue = [];
+
 // --- CHỨC NĂNG XÓA KEY (QUAN TRỌNG: Đã sửa bỏ no-cors) ---
 function deleteKey(rowId) {
-  if (confirm("Bạn muốn xóa Key này vĩnh viễn?")) {
-    // Hiệu ứng xóa ngay trên giao diện cho mượt (Optimistic UI)
-    const row = document.getElementById(`key-row-${rowId}`);
-    if (row) row.style.opacity = "0.3";
-
-    fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({ action: "delete_key", row: rowId }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.status === "success") {
-          showToast("Đã xóa key thành công!", "success");
-          loadKeys(); // Tải lại dữ liệu sạch từ server
-        } else {
-          showToast("Xóa thất bại!", "error");
-          if (row) row.style.opacity = "1"; // Hồi phục nếu lỗi
-        }
-      })
-      .catch((err) => {
-        console.error(err);
-        showToast("Lỗi kết nối!", "error");
-        if (row) row.style.opacity = "1";
-      });
+  // 1. Thêm vào hàng đợi và làm mờ (Bỏ confirm để xóa liên tiếp mượt hơn)
+  const row = document.getElementById(`key-row-${rowId}`);
+  if (row) {
+    row.style.opacity = "0.3";
+    row.style.pointerEvents = "none";
+    deleteQueue.push(row);
   }
+  processDeleteQueue();
+}
+
+function processDeleteQueue() {
+  if (isDeleting || deleteQueue.length === 0) return;
+  isDeleting = true;
+
+  const row = deleteQueue.shift();
+  // Lấy ID thật sự tại thời điểm gửi API (vì index có thể đã đổi do các lần xóa trước)
+  const currentRowId = parseInt(row.id.replace("key-row-", ""));
+
+  fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ action: "delete_key", row: currentRowId }),
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      if (data.status === "success") {
+        // Không gọi loadKeys() để tránh giật lag UI. Xử lý DOM tại chỗ.
+        if (row.classList.contains("row-used")) {
+          const usedEl = document.getElementById("stat-used");
+          if (usedEl)
+            usedEl.innerText = Math.max(0, parseInt(usedEl.innerText) - 1);
+        } else {
+          const activeEl = document.getElementById("stat-active");
+          if (activeEl)
+            activeEl.innerText = Math.max(0, parseInt(activeEl.innerText) - 1);
+        }
+        row.remove();
+
+        // Giảm rowId và STT của các dòng bên dưới đi 1 để khớp với Google Sheet
+        const allRows = document.querySelectorAll("#key-list-body tr");
+        allRows.forEach((tr) => {
+          const currentIdStr = tr.id.replace("key-row-", "");
+          if (currentIdStr) {
+            const currentId = parseInt(currentIdStr);
+            if (currentId > currentRowId) {
+              const newId = currentId - 1;
+              tr.id = `key-row-${newId}`;
+
+              const delBtn = tr.querySelector(".btn-icon-del");
+              if (delBtn) delBtn.setAttribute("onclick", `deleteKey(${newId})`);
+
+              const sttCell = tr.querySelector("td:first-child");
+              if (sttCell && !isNaN(sttCell.innerText)) {
+                sttCell.innerText = parseInt(sttCell.innerText) - 1;
+              }
+            }
+          }
+        });
+      } else {
+        showToast("Xóa thất bại!", "error");
+        row.style.opacity = "1";
+        row.style.pointerEvents = "auto";
+      }
+    })
+    .catch((err) => {
+      console.error(err);
+      showToast("Lỗi kết nối!", "error");
+      row.style.opacity = "1";
+      row.style.pointerEvents = "auto";
+    })
+    .finally(() => {
+      isDeleting = false;
+      processDeleteQueue(); // Chạy vòng lặp tiếp theo nếu bạn xóa nhiều cái
+    });
 }
 
 // ============================================================
@@ -305,15 +360,12 @@ function renderInput(containerId, key, value) {
   div.innerHTML = `
         <div class="form-group">
             <label>${labelName}</label>
-            <input type="text" id="${id}" value="${value}" onchange="updateValue('${id}', this.value)">
+            <input type="text" id="${id}" value="${value}" readonly>
         </div>
+        <button class="btn-edit" onclick="openEditModal('${id}')"><i class="fa-solid fa-pen"></i></button>
         <button class="btn-delete" onclick="triggerDelete('${id}')"><i class="fa-solid fa-trash"></i></button>
     `;
   document.getElementById(containerId).appendChild(div);
-}
-
-function updateValue(id, val) {
-  configData[getIdToKey(id)] = val;
 }
 
 function openModal(type) {
@@ -326,7 +378,7 @@ function openModal(type) {
     title.innerText = "THÊM GÓI GIÁ";
     phName.placeholder = "Tên gói (VD: Gói VIP 1 Tháng)";
     phValue.placeholder = "Giá tiền (VD: 50000 - Chỉ nhập số)";
-  } else {
+  } else if (type === "link") {
     title.innerText = "THÊM LINK TẢI";
     phName.placeholder = "Tên game (VD: Liên Quân iOS)";
     phValue.placeholder = "Đường dẫn tải (VD: https://...)";
@@ -343,6 +395,45 @@ function toggleModal(show) {
     setTimeout(() => document.getElementById("new-item-name").focus(), 100);
   } else {
     m.classList.remove("show");
+  }
+}
+
+function openEditModal(id) {
+  const inputEl = document.getElementById(id);
+  if (!inputEl) return;
+
+  document.getElementById("edit-item-id").value = id;
+  document.getElementById("edit-item-value").value = inputEl.value;
+
+  let key = getIdToKey(id);
+  let prefix = key.startsWith("price_") ? "price_" : "link_";
+  let labelName = key.replace(prefix, "").replace(/_/g, " ").toUpperCase();
+  document.getElementById("modal-edit-title").innerText = "SỬA " + labelName;
+
+  const m = document.getElementById("modal-edit");
+  m.classList.add("show");
+  setTimeout(() => document.getElementById("edit-item-value").focus(), 100);
+}
+
+function closeEditModal() {
+  document.getElementById("modal-edit").classList.remove("show");
+}
+
+function confirmEdit() {
+  const id = document.getElementById("edit-item-id").value;
+  const newValue = document.getElementById("edit-item-value").value.trim();
+
+  if (!newValue) {
+    showToast("Vui lòng nhập giá trị!", "error");
+    return;
+  }
+
+  const inputEl = document.getElementById(id);
+  if (inputEl) {
+    inputEl.value = newValue;
+    configData[getIdToKey(id)] = newValue;
+    closeEditModal();
+    saveData();
   }
 }
 
@@ -376,7 +467,7 @@ function confirmAddItem() {
   );
   configData[newKey] = value;
   toggleModal(false);
-  showToast("Đã thêm (Hãy bấm Lưu)", "success");
+  saveData();
 }
 
 // Xóa Cấu hình (Modal Đỏ)
@@ -396,20 +487,30 @@ function executeDelete() {
     const key = getIdToKey(deleteTargetId);
     delete configData[key];
 
-    showToast("Đã xóa mục này!", "success");
     closeConfirmModal();
+    saveData();
   }
 }
 
 // Lưu Cấu hình
 function saveData() {
-  const btn = document.querySelector(".btn-save-mini");
-  const originalHTML = btn.innerHTML;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang lưu...';
-  btn.disabled = true;
+  document.getElementById("loading-overlay").classList.remove("hidden");
 
-  // Gom dữ liệu mới nhất từ DOM
-  let payload = {};
+  // Bắt buộc khai báo action để Server nhận diện
+  let payload = { action: "save_config" };
+
+  // Giữ lại các cấu hình không hiển thị trên input (ví dụ như trạng thái bảo trì nếu có)
+  for (let key in configData) {
+    if (
+      !key.startsWith("stats_") &&
+      !key.startsWith("price_") &&
+      !key.startsWith("link_")
+    ) {
+      payload[key] = configData[key];
+    }
+  }
+
+  // Lấy dữ liệu mới nhất từ DOM (tránh trường hợp lệch dữ liệu)
   document.querySelectorAll(".dynamic-row input").forEach((input) => {
     let key = getIdToKey(input.id);
     payload[key] = input.value;
@@ -422,15 +523,21 @@ function saveData() {
   })
     .then((res) => res.json())
     .then((data) => {
-      showToast("Đã lưu thành công!", "success");
-      localStorage.setItem(CACHE_CONFIG, JSON.stringify(payload));
-      btn.innerHTML = originalHTML;
-      btn.disabled = false;
+      if (data.status === "success") {
+        showToast("Đã tự động lưu cấu hình!", "success");
+        // Phục hồi lại dữ liệu thống kê vào bộ nhớ tạm để tránh bị hiển thị lỗi hoặc giật lag khi reload trang
+        payload.stats_revenue = configData.stats_revenue;
+        payload.stats_orders = configData.stats_orders;
+        localStorage.setItem(CACHE_CONFIG, JSON.stringify(payload));
+      } else {
+        showToast("Lỗi Server: " + data.msg, "error");
+      }
     })
     .catch((err) => {
-      showToast("Lỗi khi lưu!", "error");
-      btn.innerHTML = originalHTML;
-      btn.disabled = false;
+      showToast("Lỗi khi tự động lưu!", "error");
+    })
+    .finally(() => {
+      document.getElementById("loading-overlay").classList.add("hidden");
     });
 }
 
@@ -481,23 +588,10 @@ function startRealtimeUsers() {
   // Thiết lập gọi ngầm định kỳ mỗi 10 giây (Polling)
   realtimeInterval = setInterval(fetchOnlineUsers, 10000);
 }
-async function setMaintenance(status) {
-  const data = {
-    action: "save_maintenance",
-    maintenance_mode: status, // "ON" hoặc "OFF"
-    time: new Date().toLocaleString(),
-  };
 
-  try {
-    const response = await fetch(API_URL, {
-      method: "POST",
-      mode: "no-cors", // Tránh lỗi CORS khi dùng Google Script
-      body: JSON.stringify(data),
-    });
-    alert("Đã gửi lệnh: " + (status === "ON" ? "BẬT BẢO TRÌ" : "TẮT BẢO TRÌ"));
-  } catch (e) {
-    alert("Lỗi: " + e.message);
-  }
+function updateFixedConfig(key, value) {
+  configData[key] = value.trim();
+  saveData();
 }
 
 function toggleSidebar() {
