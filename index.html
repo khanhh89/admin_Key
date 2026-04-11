@@ -111,8 +111,13 @@
       </div>
     </div>
 
-    <div class="sidebar">
-      <div class="logo">MOD<span>PANEL</span></div>
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px;">
+        <div class="logo" style="margin-bottom: 0;">MOD<span>PANEL</span></div>
+        <button onclick="toggleSidebar()" class="btn-toggle-sidebar" style="background: transparent; border: none; color: var(--primary); font-size: 1.5rem; cursor: pointer;">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+      </div>
       <div class="menu-item active" onclick="switchTab('stats', this)">
         <i class="fa-solid fa-chart-line"></i> <span>Dashboard</span>
       </div>
@@ -128,7 +133,7 @@
       
     </div>
 
-    <div class="main">
+    <div class="main" id="main-content">
       <div id="tab-stats" class="tab-content active">
         <h2 style="margin-bottom: 20px">Dashboard</h2>
         <div class="grid">
