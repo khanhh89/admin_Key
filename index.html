@@ -226,17 +226,22 @@
         <div class="card">
           <div class="card-header">
             <h3>Danh sách Key</h3>
-            <button
-              class="btn-add-small"
-              onclick="
-                document
-                  .getElementById('modal-import-key')
-                  .classList.add('show')
-              "
-              style="width: auto; padding: 0 15px; border-radius: 6px"
-            >
-              <i class="fa-solid fa-upload"></i> Nạp Key
-            </button>
+            <div class="header-actions">
+              <div class="search-container">
+                <input type="text" id="search-key-input" class="search-input" placeholder="Tìm Key hoặc Mã GD..." oninput="searchKeys()">
+              </div>
+              <button
+                class="btn-add-small"
+                onclick="
+                  document
+                    .getElementById('modal-import-key')
+                    .classList.add('show')
+                "
+                style="width: auto; padding: 0 15px; border-radius: 6px; height: 42px; white-space: nowrap;"
+              >
+                <i class="fa-solid fa-upload"></i> Nạp Key
+              </button>
+            </div>
           </div>
           <div class="table-container">
             <table class="key-table">

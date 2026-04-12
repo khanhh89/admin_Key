@@ -415,6 +415,8 @@ select#import-type:focus {
   margin-bottom: 25px;
   border-bottom: 1px solid var(--border);
   padding-bottom: 15px;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 .card h3 {
   color: var(--primary);
@@ -655,6 +657,36 @@ input:focus {
   color: var(--primary);
 }
 
+/* SEARCH BAR & HEADER ACTIONS CHO KHO KEY */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  justify-content: flex-end;
+}
+.search-container {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  max-width: 190px;
+}
+.search-input {
+  width: 100%;
+  height: 42px;
+  padding: 0 15px;
+  background: #000;
+  border: 1px solid #333;
+  color: #fff;
+  border-radius: 6px;
+  outline: none;
+  transition: 0.3s;
+}
+.search-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 10px rgba(0, 242, 255, 0.1);
+}
+
 /* MOBILE RESPONSIVE */
 @media (max-width: 768px) {
   /* Tối ưu Sidebar - Thu gọn mặc định */
@@ -716,6 +748,14 @@ input:focus {
   .card-header {
     margin-bottom: 15px;
     padding-bottom: 10px;
+  }
+  .header-actions {
+    width: 100%;
+    margin-top: 5px;
+    justify-content: space-between;
+  }
+  .search-container {
+    max-width: unset;
   }
 
   /* Typography */

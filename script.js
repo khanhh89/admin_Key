@@ -5,6 +5,7 @@ let deleteTargetId = null;
 let currentAddType = "price";
 const CACHE_CONFIG = "admin_config_v3";
 const CACHE_KEYS = "admin_keys_v3";
+let allKeysData = [];
 function getIdToKey(id) {
   return id.replace(/-/g, "_");
 }
@@ -143,7 +144,8 @@ function loadKeys() {
     .then((res) => {
       // Kiểm tra res và res.data để tránh lỗi undefined
       if (res && res.status === "success" && Array.isArray(res.data)) {
-        renderKeysTable(res.data);
+        allKeysData = res.data;
+        renderKeysTable(allKeysData);
       } else {
         tbody.innerHTML =
           '<tr><td colspan="6" style="text-align:center;">Lỗi: Dữ liệu không hợp lệ</td></tr>';
@@ -170,13 +172,14 @@ function renderKeysTable(dataList) {
   }
 
   // --- BƯỚC SẮP XẾP: Đẩy 'Active' lên đầu, 'Used' xuống cuối ---
-  dataList.sort((a, b) => {
+  // Tạo bản sao để không ảnh hưởng dữ liệu gốc khi thao tác tìm kiếm
+  const sortedList = [...dataList].sort((a, b) => {
     if (a.status === "Active" && b.status !== "Active") return -1;
     if (a.status !== "Active" && b.status === "Active") return 1;
     return 0; // Giữ nguyên thứ tự nếu cùng trạng thái
   });
 
-  dataList.forEach((item, index) => {
+  sortedList.forEach((item, index) => {
     // Đếm số lượng
     if (item.status == "Active") activeCount++;
     else usedCount++;
@@ -215,6 +218,21 @@ function renderKeysTable(dataList) {
 
   document.getElementById("stat-active").innerText = activeCount;
   document.getElementById("stat-used").innerText = usedCount;
+}
+
+function searchKeys() {
+  const keyword = document.getElementById("search-key-input") ? document.getElementById("search-key-input").value.toLowerCase().trim() : "";
+  if (!keyword) {
+    renderKeysTable(allKeysData);
+    return;
+  }
+
+  const filteredData = allKeysData.filter((item) => {
+    const keyMatch = item.key && String(item.key).toLowerCase().includes(keyword);
+    const ownerMatch = item.owner && String(item.owner).toLowerCase().includes(keyword);
+    return keyMatch || ownerMatch;
+  });
+  renderKeysTable(filteredData);
 }
 
 // --- CHỨC NĂNG NẠP KEY (Đã sửa bỏ no-cors) ---
@@ -309,6 +327,15 @@ function processDeleteQueue() {
             activeEl.innerText = Math.max(0, parseInt(activeEl.innerText) - 1);
         }
         row.remove();
+
+        // Cập nhật lại dữ liệu gốc trong bộ nhớ để Search không bị lỗi ID
+        const indexToDelete = allKeysData.findIndex(k => k.id === currentRowId);
+        if (indexToDelete !== -1) {
+          allKeysData.splice(indexToDelete, 1);
+          allKeysData.forEach(k => {
+            if (k.id > currentRowId) k.id -= 1;
+          });
+        }
 
         // Giảm rowId và STT của các dòng bên dưới đi 1 để khớp với Google Sheet
         const allRows = document.querySelectorAll("#key-list-body tr");
