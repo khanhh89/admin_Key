@@ -195,7 +195,12 @@ function renderKeysTable(dataList) {
     tbody.innerHTML += `
             <tr id="key-row-${item.id}" class="${item.status == "Active" ? "" : "row-used"}">
                 <td>${index + 1}</td>
-                <td class="key-code">${item.key}</td>
+                <td class="key-code" style="display: flex; align-items: center; gap: 10px; justify-content: space-between;">
+                    <span>${item.key}</span>
+                    <button class="btn-icon-copy" onclick="copyKey('${item.key}')" title="Sao chép">
+                        <i class="fa-solid fa-copy"></i>
+                    </button>
+                </td>
                 <td style="color:var(--primary); font-weight:600;">${typeName}</td>
                 <td>${statusBadge}</td>
                 <td style="color:#aaa;">${item.owner || "Chưa có"}</td>
@@ -597,4 +602,16 @@ function updateFixedConfig(key, value) {
 function toggleSidebar() {
   document.getElementById("sidebar").classList.toggle("collapsed");
   document.getElementById("main-content").classList.toggle("expanded");
+}
+
+function copyKey(keyText) {
+  navigator.clipboard
+    .writeText(keyText)
+    .then(() => {
+      showToast("Đã sao chép: " + keyText, "success");
+    })
+    .catch((err) => {
+      console.error("Lỗi sao chép:", err);
+      showToast("Sao chép thất bại!", "error");
+    });
 }

@@ -644,6 +644,16 @@ input:focus {
 .btn-icon-del:hover {
   color: var(--danger);
 }
+.btn-icon-copy {
+  background: transparent;
+  border: none;
+  color: #555;
+  cursor: pointer;
+  transition: 0.3s;
+}
+.btn-icon-copy:hover {
+  color: var(--primary);
+}
 
 /* MOBILE RESPONSIVE */
 @media (max-width: 768px) {
